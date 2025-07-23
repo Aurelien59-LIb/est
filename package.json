@@ -1,0 +1,11 @@
+{
+  "name": "code",
+  "version": "1.0.0",
+  "description": "A fitness app project",
+  "scripts": {
+    "dev": "echo 'This is a Flutter/SwiftUI project. Please open in appropriate IDE.'",
+    "build": "echo 'This is a Flutter/SwiftUI project. Please open in appropriate IDE.'"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
