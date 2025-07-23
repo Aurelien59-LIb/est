@@ -3,9 +3,11 @@
   "version": "1.0.0",
   "description": "A fitness app project",
   "scripts": {
-    "dev": "echo 'This is a Flutter/SwiftUI project. Please open in appropriate IDE.'",
+    "dev": "npx http-server . -p 3000 -c-1",
     "build": "echo 'This is a Flutter/SwiftUI project. Please open in appropriate IDE.'"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  },
   "dependencies": {}
 }
