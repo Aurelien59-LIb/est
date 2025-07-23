@@ -1,540 +1,445 @@
 import SwiftUI
 
 struct DashboardView: View {
-    @State private var currentSteps: Int = 8312
-    @State private var goalSteps: Int = 10000
-    @State private var selectedPeriod: String = "Monthly"
-    @State private var selectedTab: Int = 0
+    @State private var selectedTimeframe = 1 // 0: Daily, 1: Monthly, 2: Yearly
+    @State private var currentSteps = 8312
+    @State private var goalSteps = 10000
+    @State private var averageSteps = 8635
+    @State private var bestSteps = 12235
     
-    private var stepsRemaining: Int {
-        goalSteps - currentSteps
+    var remainingSteps: Int {
+        max(0, goalSteps - currentSteps)
     }
     
-    private var progressPercentage: Double {
+    var progressPercentage: Double {
         Double(currentSteps) / Double(goalSteps)
     }
     
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // Background gradient
-                Color(red: 0.984, green: 0.968, blue: 0.937)
-                    .ignoresSafeArea()
+        ScrollView {
+            VStack(spacing: 0) {
+                // Header with profile and rewards
+                HeaderView()
                 
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
-                        // Header section
-                        headerSection
-                        
-                        // Main content area
-                        mainContentSection
-                            .background(Color.white)
-                            .cornerRadius(32, corners: [.topLeft, .topRight])
-                            .padding(.top, 32)
-                    }
-                }
+                // Date section
+                DateSection()
                 
-                // Bottom navigation
-                VStack {
-                    Spacer()
-                    bottomNavigationBar
-                        .background(Color.white)
-                        .shadow(color: .black.opacity(0.54), radius: 9, x: 1, y: 1)
+                // Main motivational section
+                MotivationalSection(remainingSteps: remainingSteps)
+                
+                // Progress bar section
+                ProgressBarSection(
+                    currentSteps: currentSteps,
+                    goalSteps: goalSteps,
+                    progressPercentage: progressPercentage
+                )
+                
+                // Bottom white section with stats and chart
+                VStack(spacing: 20) {
+                    // Title
+                    Text("Your Steps Progress")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(Color(hex: "#321C1C"))
+                        .padding(.top, 20)
+                    
+                    // Segmented control
+                    TimeframeSelector(selectedTimeframe: $selectedTimeframe)
+                    
+                    // Statistics
+                    StatsSection(averageSteps: averageSteps, bestSteps: bestSteps)
+                    
+                    // Chart
+                    ChartSection()
+                    
+                    Spacer(minLength: 120) // Space for tab bar
                 }
+                .background(Color.white)
+                .clipShape(RoundedRectangle(cornerRadius: 32))
             }
         }
+        .background(Color(hex: "#FBF7EF"))
+        .ignoresSafeArea(edges: .bottom)
     }
-    
-    // MARK: - Header Section
-    private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            HStack {
-                // Profile Avatar
+}
+
+struct HeaderView: View {
+    var body: some View {
+        HStack {
+            // Profile button
+            Button(action: {}) {
                 ZStack {
                     Circle()
-                        .fill(Color(red: 0.941, green: 0.910, blue: 0.863))
+                        .fill(Color(hex: "#F0E8DC"))
                         .frame(width: 38, height: 38)
                     
                     Image(systemName: "person.fill")
-                        .foregroundColor(Color(red: 1.0, green: 0.992, blue: 0.976))
-                        .font(.system(size: 18))
-                }
-                
-                Spacer()
-                
-                // Rewards section
-                HStack(spacing: 16) {
-                    rewardItem(color: Color(red: 1.0, green: 0.722, blue: 0.004), count: "12")
-                    rewardItem(color: Color(red: 0.671, green: 0.741, blue: 0.773), count: "6")
-                    rewardItem(color: Color(red: 0.651, green: 0.427, blue: 0.788), count: "2")
+                        .foregroundColor(Color(hex: "#FFFDF9"))
+                        .font(.system(size: 16))
                 }
             }
-            .padding(.horizontal, 22)
-            .padding(.top, 42)
             
-            // Date section
-            VStack(alignment: .leading, spacing: 10) {
-                Text("April 21, Friday")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                    .padding(.horizontal, 21)
-                
-                Rectangle()
-                    .fill(Color(red: 0.196, green: 0.110, blue: 0.110).opacity(0.13))
-                    .frame(height: 1)
-                    .padding(.horizontal, 21)
-            }
-            .padding(.top, 50)
+            Spacer()
             
-            // Monster and progress section
-            HStack(alignment: .top, spacing: 24) {
-                // Monster character
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 148, height: 148)
-                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 4)
-                    
-                    MonsterCharacterView()
-                        .frame(width: 120, height: 120)
-                }
-                
-                // Text content
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("You're almost there!")
-                        .font(.system(size: 24, weight: .semibold))
-                        .foregroundColor(Color(red: 0.196, green: 0.110, blue: 0.110))
-                        .multilineTextAlignment(.leading)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Steps left to defeat ⚔️")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                        
-                        Text("\(stepsRemaining)")
-                            .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(Color(red: 0.196, green: 0.110, blue: 0.110))
-                    }
-                }
-                
-                Spacer()
+            // Rewards section
+            HStack(spacing: 16) {
+                RewardBadge(count: 12, color: Color(hex: "#FFB801"))
+                RewardBadge(count: 6, color: Color(hex: "#ABBEC5"))
+                RewardBadge(count: 2, color: Color(hex: "#A66DC9"))
             }
-            .padding(.horizontal, 31)
-            .padding(.top, 30)
-            
-            // Progress bar section
-            VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .leading) {
-                    // Background bar
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(Color(red: 0.851, green: 0.820, blue: 0.761))
-                        .frame(height: 11)
-                    
-                    // Progress bar
-                    RoundedRectangle(cornerRadius: 32)
-                        .fill(Color(red: 0.141, green: 0.722, blue: 0.459))
-                        .frame(width: 315 * progressPercentage, height: 11)
-                    
-                    // Treasure chest icon
-                    HStack {
-                        Spacer()
-                        treasureChestIcon
-                            .offset(x: -10)
-                    }
-                }
-                
-                HStack {
-                    Text("\(currentSteps) steps done")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                    
-                    Spacer()
-                    
-                    Text("Goal \(goalSteps)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                }
-            }
-            .padding(.horizontal, 35)
-            .padding(.top, 30)
         }
+        .padding(.horizontal, 22)
+        .padding(.top, 10)
     }
+}
+
+struct RewardBadge: View {
+    let count: Int
+    let color: Color
     
-    // MARK: - Main Content Section
-    private var mainContentSection: some View {
-        VStack(spacing: 20) {
-            Text("Your Steps Progress")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(Color(red: 0.196, green: 0.110, blue: 0.110))
-                .padding(.top, 19)
-            
-            // Segmented control
-            segmentedControl
-                .padding(.horizontal, 15)
-            
-            // Stats section
-            statsSection
-                .padding(.horizontal, 17)
-            
-            // Chart section
-            chartSection
-                .padding(.horizontal, 16)
-                .padding(.bottom, 120)
-        }
-    }
-    
-    // MARK: - Supporting Views
-    private func rewardItem(color: Color, count: String) -> some View {
+    var body: some View {
         HStack(spacing: 4) {
-            GeometryReader { geometry in
-                Path { path in
-                    let width = geometry.size.width
-                    let height = geometry.size.height
-                    
-                    // Create hexagon shape
-                    let points = [
-                        CGPoint(x: width * 0.5, y: 0),
-                        CGPoint(x: width * 0.933, y: height * 0.25),
-                        CGPoint(x: width * 0.933, y: height * 0.75),
-                        CGPoint(x: width * 0.5, y: height),
-                        CGPoint(x: width * 0.067, y: height * 0.75),
-                        CGPoint(x: width * 0.067, y: height * 0.25)
-                    ]
-                    
-                    path.move(to: points[0])
-                    for point in points.dropFirst() {
-                        path.addLine(to: point)
-                    }
-                    path.closeSubpath()
-                }
-                .fill(color)
-                .stroke(Color.white, lineWidth: 1)
+            ZStack {
+                // Star/gem shape
+                Image(systemName: "diamond.fill")
+                    .foregroundColor(color)
+                    .font(.system(size: 20))
             }
             .frame(width: 22, height: 24)
             
-            Text(count)
+            Text("\(count)")
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(red: 0.196, green: 0.110, blue: 0.110))
+                .foregroundColor(Color(hex: "#321C1C"))
         }
     }
-    
-    private var treasureChestIcon: some View {
-        ZStack {
-            Circle()
-                .fill(Color(red: 0.996, green: 0.988, blue: 0.973))
-                .stroke(Color(red: 1.0, green: 0.780, blue: 0.0), lineWidth: 1)
-                .frame(width: 43, height: 43)
-            
-            // Simplified treasure chest
-            VStack(spacing: 2) {
-                Rectangle()
-                    .fill(Color(red: 0.510, green: 0.247, blue: 0.671))
-                    .frame(width: 15, height: 8)
-                    .cornerRadius(2)
+}
+
+struct DateSection: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            HStack {
+                Text("April 21, Friday")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "#877777"))
                 
-                Rectangle()
-                    .fill(Color(red: 0.510, green: 0.247, blue: 0.671))
-                    .frame(width: 15, height: 12)
-                    .cornerRadius(2)
+                Spacer()
             }
-        }
-    }
-    
-    private var segmentedControl: some View {
-        HStack(spacing: 0) {
-            segmentButton(title: "Daily", isSelected: selectedPeriod == "Daily")
-            segmentButton(title: "Monthly", isSelected: selectedPeriod == "Monthly")
-            segmentButton(title: "Yearly", isSelected: selectedPeriod == "Yearly")
-        }
-        .background(Color(red: 0.902, green: 0.883, blue: 0.847).opacity(0.33))
-        .cornerRadius(100)
-        .frame(height: 32)
-    }
-    
-    private func segmentButton(title: String, isSelected: Bool) -> some View {
-        Button(action: {
-            selectedPeriod = title
-        }) {
-            Text(title)
-                .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .frame(height: 28)
-                .background(
-                    isSelected ? 
-                    RoundedRectangle(cornerRadius: 100)
-                        .fill(Color.white)
-                        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 3)
-                    : nil
-                )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var statsSection: some View {
-        HStack {
-            statItem(title: "Average", value: "8,635")
+            .padding(.horizontal, 22)
             
             Rectangle()
-                .fill(Color(red: 0.557, green: 0.557, blue: 0.576).opacity(0.3))
-                .frame(width: 1, height: 49)
-            
-            statItem(title: "Best", value: "12,235")
+                .fill(Color(hex: "#321C1C").opacity(0.13))
+                .frame(height: 1)
+                .padding(.horizontal, 22)
         }
+        .padding(.top, 15)
     }
+}
+
+struct MotivationalSection: View {
+    let remainingSteps: Int
     
-    private func statItem(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(title)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
+    var body: some View {
+        HStack(alignment: .top, spacing: 20) {
+            // Monster character
+            AsyncImage(url: URL(string: "https://cdn.builder.io/api/v1/image/assets%2F96bdcea875754831a96565514f304211%2F4c5703c7a0614c80be54a3c1b519e15a?format=webp&width=300")) { image in
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            } placeholder: {
+                Circle()
+                    .fill(Color.white)
+                    .overlay(
+                        Image(systemName: "figure.run")
+                            .font(.system(size: 40))
+                            .foregroundColor(.purple)
+                    )
+            }
+            .frame(width: 140, height: 140)
+            .background(
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 135, height: 135)
+            )
             
-            HStack(spacing: 4) {
-                Text(value)
+            // Text section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("You're almost\nthere!")
                     .font(.system(size: 24, weight: .semibold))
-                    .foregroundColor(.black)
+                    .foregroundColor(Color(hex: "#321C1C"))
+                    .lineLimit(nil)
                 
-                Text("steps")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Steps left to defeat ⚔️")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
+                    
+                    Text("\(remainingSteps)")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(Color(hex: "#321C1C"))
+                }
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 22)
+        .padding(.top, 30)
+    }
+}
+
+struct ProgressBarSection: View {
+    let currentSteps: Int
+    let goalSteps: Int
+    let progressPercentage: Double
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("\(currentSteps) steps done")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                    .padding(.top, 8)
+                    .foregroundColor(Color(hex: "#877777"))
+                
+                Spacer()
+                
+                Text("Goal \(goalSteps)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color(hex: "#877777"))
+            }
+            
+            ZStack(alignment: .leading) {
+                // Background bar
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color(hex: "#D9D1C2"))
+                    .frame(height: 11)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 32)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                    )
+                
+                // Progress bar
+                RoundedRectangle(cornerRadius: 32)
+                    .fill(Color(hex: "#24B874"))
+                    .frame(width: max(0, 315 * progressPercentage), height: 11)
+            }
+            .frame(width: 315)
+            
+            // Trophy badge
+            HStack {
+                Spacer()
+                
+                ZStack {
+                    Circle()
+                        .stroke(Color(hex: "#FFC700"), lineWidth: 1)
+                        .fill(Color(hex: "#FEFCF8"))
+                        .frame(width: 43, height: 43)
+                    
+                    Image(systemName: "trophy.fill")
+                        .foregroundColor(Color(hex: "#FFC700"))
+                        .font(.system(size: 20))
+                }
+                .offset(x: -10)
+            }
+            .frame(width: 315)
+        }
+        .padding(.horizontal, 35)
+        .padding(.top, 20)
+        .padding(.bottom, 30)
+    }
+}
+
+struct TimeframeSelector: View {
+    @Binding var selectedTimeframe: Int
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(0..<3) { index in
+                Button(action: {
+                    selectedTimeframe = index
+                }) {
+                    Text(["Daily", "Monthly", "Yearly"][index])
+                        .font(.system(size: 15, weight: selectedTimeframe == index ? .semibold : .medium))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 28)
+                        .background(
+                            RoundedRectangle(cornerRadius: 100)
+                                .fill(selectedTimeframe == index ? Color.white : Color.clear)
+                                .shadow(color: selectedTimeframe == index ? .black.opacity(0.12) : .clear, radius: 3, y: 3)
+                        )
+                }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 100)
+                .fill(Color(hex: "#E6E1D8").opacity(0.33))
+        )
+        .frame(width: 359, height: 32)
     }
+}
+
+struct StatsSection: View {
+    let averageSteps: Int
+    let bestSteps: Int
     
-    private var chartSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+    var body: some View {
+        HStack {
+            // Average
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Average")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "#877777"))
+                
+                HStack(alignment: .bottom, spacing: 4) {
+                    Text("\(averageSteps)")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text("steps")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
+                        .padding(.bottom, 2)
+                }
+            }
+            
+            Spacer()
+            
+            // Separator
+            Rectangle()
+                .fill(Color(hex: "#8E8E93").opacity(0.3))
+                .frame(width: 1, height: 49)
+            
+            Spacer()
+            
+            // Best
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Best")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(Color(hex: "#877777"))
+                
+                HStack(alignment: .bottom, spacing: 4) {
+                    Text("\(bestSteps)")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.black)
+                    
+                    Text("steps")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
+                        .padding(.bottom, 2)
+                }
+            }
+        }
+        .padding(.horizontal, 17)
+    }
+}
+
+struct ChartSection: View {
+    let chartData = [4, 6, 8, 5, 7, 12, 9, 10, 6, 8, 11, 7, 8, 12, 15, 10, 9, 11, 8, 6, 10, 14, 7, 9, 5, 8, 11, 6, 7, 4]
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Navigation
             HStack {
                 Button(action: {}) {
                     Image(systemName: "chevron.left")
-                        .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
+                        .foregroundColor(Color(hex: "#877777"))
                 }
                 
                 Spacer()
                 
                 Text("April , 2023")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundColor(Color(red: 0.196, green: 0.110, blue: 0.110))
+                    .foregroundColor(Color(hex: "#321C1C"))
                 
                 Spacer()
                 
                 Button(action: {}) {
                     Image(systemName: "chevron.right")
-                        .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
+                        .foregroundColor(Color(hex: "#877777"))
                 }
             }
+            .padding(.horizontal, 17)
             
             // Chart
-            chartView
-        }
-    }
-    
-    private var chartView: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            HStack {
-                Spacer()
-                Text("12,000")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-            }
-            
-            HStack(alignment: .bottom, spacing: 6) {
-                ForEach(0..<24, id: \.self) { index in
-                    chartBar(height: CGFloat.random(in: 20...126))
-                }
-            }
-            .frame(height: 140)
-            
-            HStack {
-                Text("1")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                
-                Spacer()
-                
-                Text("15")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-                
-                Spacer()
-                
-                Text("30")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(Color(red: 0.529, green: 0.467, blue: 0.467))
-            }
-        }
-    }
-    
-    private func chartBar(height: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(Color(red: 1.0, green: 0.569, blue: 0.169))
-            .frame(width: 8, height: height)
-    }
-    
-    private var bottomNavigationBar: some View {
-        HStack {
-            navBarItem(icon: "chart.bar.fill", title: "Dashboard", index: 0)
-            navBarItem(icon: "figure.strengthtraining.traditional", title: "Challenges", index: 1)
-            navBarItem(icon: "figure.run", title: "Equipment", index: 2)
-            navBarItem(icon: "bag.fill", title: "Shop", index: 3)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 8)
-        .frame(height: 82)
-    }
-    
-    private func navBarItem(icon: String, title: String, index: Int) -> some View {
-        Button(action: {
-            selectedTab = index
-        }) {
-            VStack(spacing: 6) {
-                ZStack {
-                    if selectedTab == index {
-                        RoundedRectangle(cornerRadius: 1000)
-                            .fill(Color(red: 0.965, green: 0.957, blue: 0.945))
-                            .frame(width: 94, height: 59)
-                    }
-                    
-                    VStack(spacing: 6) {
-                        Image(systemName: icon)
-                            .font(.system(size: 16))
-                            .foregroundColor(.black)
-                        
-                        Text(title)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.black)
-                    }
-                    .padding(.vertical, 8)
-                }
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .frame(maxWidth: .infinity)
-    }
-}
-
-// MARK: - Monster Character View
-struct MonsterCharacterView: View {
-    var body: some View {
-        ZStack {
-            // Main body
-            Ellipse()
-                .fill(Color(red: 0.510, green: 0.247, blue: 0.671))
-                .frame(width: 80, height: 90)
-            
-            // Light purple overlay for body shading
-            Ellipse()
-                .fill(Color(red: 0.651, green: 0.427, blue: 0.788).opacity(0.7))
-                .frame(width: 70, height: 80)
-                .offset(y: -5)
-            
-            // Eyes
-            HStack(spacing: 20) {
-                // Left eye
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 18, height: 18)
-                    
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 12, height: 12)
-                    
-                    Circle()
-                        .fill(.black)
-                        .frame(width: 6, height: 6)
-                        .offset(x: 2)
-                }
-                
-                // Right eye
-                ZStack {
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 18, height: 18)
-                    
-                    Circle()
-                        .fill(Color.orange)
-                        .frame(width: 12, height: 12)
-                    
-                    Circle()
-                        .fill(.black)
-                        .frame(width: 6, height: 6)
-                        .offset(x: 2)
-                }
-            }
-            .offset(y: -15)
-            
-            // Mouth with teeth
-            VStack(spacing: 2) {
-                HStack(spacing: 3) {
-                    ForEach(0..<6, id: \.self) { _ in
-                        Rectangle()
-                            .fill(.white)
-                            .frame(width: 3, height: 8)
+            VStack {
+                // Y-axis labels
+                HStack {
+                    Spacer()
+                    VStack(spacing: 46) {
+                        Text("12,000")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(Color(hex: "#877777"))
+                        Text("6,000")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundColor(Color(hex: "#877777"))
                     }
                 }
+                .frame(height: 120)
                 
-                Path { path in
-                    path.move(to: CGPoint(x: 0, y: 0))
-                    path.addQuadCurve(to: CGPoint(x: 30, y: 0), control: CGPoint(x: 15, y: 8))
+                // X-axis labels
+                HStack {
+                    Text("1")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
+                    
+                    Spacer()
+                    
+                    Text("15")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
+                    
+                    Spacer()
+                    
+                    Text("30")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color(hex: "#877777"))
                 }
-                .stroke(Color.white, lineWidth: 2)
-                .frame(width: 30, height: 8)
+                .padding(.horizontal, 1)
             }
-            .offset(y: 10)
-            
-            // Small horns
-            HStack(spacing: 40) {
-                Triangle()
-                    .fill(Color(red: 0.651, green: 0.427, blue: 0.788))
-                    .frame(width: 8, height: 12)
-                    .rotationEffect(.degrees(10))
-                
-                Triangle()
-                    .fill(Color(red: 0.651, green: 0.427, blue: 0.788))
-                    .frame(width: 8, height: 12)
-                    .rotationEffect(.degrees(-10))
-            }
-            .offset(y: -45)
+            .overlay(
+                // Chart bars
+                HStack(alignment: .bottom, spacing: 2) {
+                    ForEach(0..<chartData.count, id: \.self) { index in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(Color(hex: "#FF912B"))
+                            .frame(width: 8, height: CGFloat(chartData[index]) * 8)
+                    }
+                }
+                .padding(.bottom, 15)
+                .padding(.leading, 1)
+            )
+            .frame(width: 359, height: 140)
         }
+        .padding(.horizontal, 16)
     }
 }
 
-// MARK: - Triangle Shape
-struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
-        return path
-    }
-}
+// Helper extension for hex colors
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
 
-// MARK: - Corner Radius Extension
-extension View {
-    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
-        clipShape(RoundedCorner(radius: radius, corners: corners))
-    }
-}
-
-struct RoundedCorner: Shape {
-    var radius: CGFloat = .infinity
-    var corners: UIRectCorner = .allCorners
-
-    func path(in rect: CGRect) -> Path {
-        let path = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: corners,
-            cornerRadii: CGSize(width: radius, height: radius)
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
         )
-        return Path(path.cgPath)
     }
 }
 
-// MARK: - Preview
 #Preview {
     DashboardView()
 }
